@@ -4,6 +4,8 @@ count=0;
 count_x=0;
 tmax=0;
 tmax_x=0;
+fes_points=[];
+op_fes_points=[];
 tic
 %% First of all we will create a outer frame of CDPR 
 % Frame of dimension (1mx1mx1m) and its corners are named with suffix A
@@ -50,11 +52,11 @@ syms B;
     
 %% Now position of COM and Rotation matrix wrt base frame
 syms R P phi psi theta;
-Px=0:0.1:1.5;
+Px=0:0.025:1;
 % Px=0.5;
 % Py=0.51;
 % Pz=0.5;
-Py=0:0.1:1.5;
+Py=0:0.025:1;
 Pz=0:0.1:1;
 loop_no=0;
  
@@ -152,7 +154,7 @@ end
 % cross_prod = [cross_prod cross(P,unit_v(9,:)')]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 W = [unit_v';cross_prod];
-r_k = rank(W);
+%r_k = rank(W);
 %% Wrench applied to the platform due to gravity Wg
 m_p = 1;%mass of platform as 1KG
 MS_p = R*m_p*[0;0;0];
@@ -165,24 +167,25 @@ Wg = [m_p*eye(3);
 % W*t+We+Wg=0
 % here t=pinv(W)*(-Wg)Moore-Penrose pseudoinverse
 % t = pinv(W)*(-Wg-[0;0;9;4.5;-4.5;0]); %+ null(W,'r')*[2;1]
-t = pinv(W)*[-20,0,9.81*4,0,0,0]';
-norm(t);
-
-if any(t<4) || any(t>80)
-    count=count+1;
-else
-    if max(t)>tmax
-        tmax=max(t);
-    end
-    figure(2)
-    plot3(P(1),P(2),P(3),".r")
-    axis([-0.1 1.5 -0.1 1.5 -0.2 1.1])
-    xlabel('x-axis');
-    ylabel('y-axis');
-    zlabel('z-axis');
-    grid on
-    hold on
-end
+% t = pinv(W)*[0,0,9.81*4,0,0,0]';
+% norm(t);
+% 
+% if any(t<4) || any(t>80)
+%     count=count+1;
+% else
+%     if max(t)>tmax
+%         tmax=max(t);
+%     end
+%     fes_points=[fes_points ; P']; %saving feasible points in an array
+%     figure(2)
+%     plot3(P(1),P(2),P(3),".r")
+%     axis([-0.1 1.5 -0.1 1.5 -0.2 1.1])
+%     xlabel('x-axis');
+%     ylabel('y-axis');
+%     zlabel('z-axis');
+%     grid on
+%     hold on
+% end
 %         end
 %     end
 % end
@@ -195,7 +198,7 @@ f=-f_ref*ones(1,8);
 lb=fmin*ones(8,1);
 ub=fmax*ones(8,1);
 Aeq=W;
-Beq=[-20,0,9.81*4,0,0,0]';
+Beq=[0,0,9.81*4,0,0,0]';
 options = optimset('Display', 'off');
 [x fval exitflag] = quadprog(H,f,[],[],Aeq,Beq,lb,ub,[],options);
 
@@ -205,16 +208,31 @@ else
     if max(x)>tmax_x
         tmax_x=max(x);
     end
-    figure(3)
-    plot3(P(1),P(2),P(3),".r")
-    axis([-0.1 1.5 -0.1 1.5 -0.2 1.1])
-    xlabel('x-axis');
-    ylabel('y-axis');
-    zlabel('z-axis');
-    grid on
-    hold on
+       op_fes_points=[op_fes_points ; P'];
+%     figure(3)
+%     plot3(P(1),P(2),P(3),".r")
+%     axis([-0.1 1.5 -0.1 1.5 -0.2 1.1])
+%     xlabel('x-axis');
+%     ylabel('y-axis');
+%     zlabel('z-axis');
+%     grid on
+%     hold on
 end
         end
     end
 end
 toc
+
+%********************************
+%% For plotting saved feasible points (should run this by coping in command window, donot uncomment here)
+% for i=1:length(fes_points)
+%figure(1)
+% plot3(fes_points(i,1),fes_points(i,2),fes_points(i,3),".r")
+%      axis([-0.1 1.5 -0.1 1.5 -0.2 1.1])
+%      xlabel('x-axis');
+%      ylabel('y-axis');
+%      zlabel('z-axis');
+%      grid on
+%      hold on
+% end
+%*****************************

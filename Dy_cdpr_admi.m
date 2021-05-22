@@ -212,13 +212,13 @@ figure(1)
 %plot(t,X(:,1)/k,'r',t,X(:,2)/k,'--g',t,X(:,1),'b',t,y,'k')
 plot(t,X(:,1),'r',t,X(:,2),'g',t,X(:,3),'--c',t,y,'k')
 grid on
-title('Virtual_position')
+title('Virtual position')
 
 figure(2)
 %plot(t,X(:,1)/k,'r',t,X(:,2)/k,'--g',t,X(:,1),'b',t,y,'k')
 plot(t,fes_x(:,1),'r',t,fes_x(:,2),'g',t,fes_x(:,3),'--c',t,y,'k')
 grid on
-title('Feasible_position')
+title('Feasible position')
 % figure(2)
 % %plot(t,X(:,1)/k,'r',t,X(:,2)/k,'--g',t,X(:,1),'b',t,y,'k')
 % plot(t,X(:,13),'m',t,X(:,14),'g',t,X(:,15),'--y',t,y,'k')
