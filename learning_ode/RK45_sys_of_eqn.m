@@ -49,7 +49,8 @@ for i=1:N
 end
 %plot
 figure(1)
-plot(t,X(1,:),'r',t,fmea,'k')
+plot(t,X(1,:),'r',t,X(2,:),'--b',t,fmea,'k')
 xlabel('Time')
 ylabel('disp or velo')
+grid on
 %legend('disp','velocity')
