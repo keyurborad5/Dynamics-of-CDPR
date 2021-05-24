@@ -1,6 +1,28 @@
 clc
 clear all
 tic
+yes=0;
+no=0;
+%% Outer Frame
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+a=[0,0.05,1;
+    0.05,0,1;
+    0.95,0,1;
+    1,0.05,1;
+    1,0.95,1;
+    0.95,1,1;
+    0.05,1,1;
+    0,0.95,1];
+params.B=0.01*[-10,15,-5;        %4
+        10,-15,5;         %6
+        -10,-15,-5;       %1
+        10,15,5;          %7
+         10,-15,-5;       %2
+         -10,15,5;        %8
+         10,15,-5;        %3
+         -10,-15,5];      %5
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% for virtual object
 mp_v=1;
 l_v=0.2;
@@ -34,7 +56,7 @@ X(:,1)=[0.5;0.5;0.5;0;0;0;0;0;0;0;0;0];
 %% step size
 h=0.1;
 tfinal=60;
-N=tfinal/h;
+N=ceil(tfinal/h);
 x_ref=X(1:6,1);
 count=0;
 %% RK45
@@ -63,7 +85,57 @@ for i=1:N
     k2=f(t(i)+h/2,X(:,i)+k1*h/2,K_v,x_ref,fmea);
     k3=f(t(i)+h/2,X(:,i)+k2*h/2,K_v,x_ref,fmea);
     k4=f(t(i)+h  ,X(:,i)+k3*h  ,K_v,x_ref,fmea);
+    
     X(:,i+1)=X(:,i)+(h/6)*(k1+2*k2+2*k3+k4);
+    
+    
+    %% for workspace feasibility
+    P = [X(1,i+1);X(2,i+1);X(3,i+1)]; %position of COM of object in base frame
+    %fixed angle rotation x(psi),y(theta),z(phi)
+    %RXYZ = Rz(?)*Ry(?)*Rx(?)
+    psi=X(4,i+1);phi=X(6,i+1);theta=X(5,i+1);
+    R = [cos(phi)*cos(theta) -sin(phi)*cos(psi)+cos(phi)*sin(theta)*sin(psi) sin(phi)*sin(psi)+cos(phi)*sin(theta)*cos(psi);
+    sin(phi)*cos(theta) cos(phi)*cos(psi)+sin(phi)*sin(theta)*sin(psi) -cos(phi)*sin(psi)+sin(phi)*sin(theta)*cos(psi);
+    -sin(theta) cos(theta)*sin(psi) cos(theta)*cos(psi)]; %Rotation of frame of Object wrt Base frame
+    
+    L = zeros(3,8);
+    Lm = zeros(8,1);
+    for j=1:length(L)
+        L(:,j)=a(j,:)'-(P+R*params.B(j,:)');
+        Lm(j)=norm(a(j,:)'-(P+R*params.B(j,:)'));
+    end
+    
+    %% Static and kinematic model
+    % Wrench matrics
+    unit_v=zeros(8,3);
+    for j=1:8
+        unit_v(j,:)=L(:,j)'/norm(L(:,j));
+    end
+    for j=1:8
+        cross_prod(:,j) = cross(R*params.B(j,:)',unit_v(j,:)');
+    end
+    W = [unit_v';cross_prod];
+    %% Quadratic programming optimisation for the cable force
+    fmin=4;
+    fmax=80;
+    f_ref=(fmax+fmin)/2;
+    H=eye(8);
+    f_op=-f_ref*ones(1,8);
+    lb=fmin*ones(8,1);
+    ub=fmax*ones(8,1);
+    Aeq=W;
+    Beq=[y(i),0,9.81*3,0,0,0]';
+    options = optimset('Display', 'off');
+    [cab_f fval exitflag] = quadprog(H,f_op,[],[],Aeq,Beq,lb,ub,[],options);
+
+    if exitflag ~= 1
+         X(:,i+1)=X(:,i);
+        no=no+1;
+    else
+        %X(:,i+1)=X(:,i+1);
+        yes=yes+1;
+    end
+    
 end
 %plot
 figure(1)
